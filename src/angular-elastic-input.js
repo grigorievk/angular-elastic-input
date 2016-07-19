@@ -26,13 +26,49 @@ angular.module('puElasticInput', []).directive('puElasticInput', ['$document', '
         return strValue;
     }
 
+    function getCalculate(parent) {
+        return parseInt(getStyle(parent, 'width'), 10) - parseInt(getStyle(parent, 'padding-left'), 10) - parseInt(getStyle(parent, 'padding-right'), 10);
+    }
+
+    function getClosest(element, selector) {
+        var matchesFn;
+        var matchesArray = ['matches', 'webkitMatchesSelector', 'mozMatchesSelector', 'msMatchesSelector', 'oMatchesSelector'];
+
+        matchesArray.some(function (fn) {
+            if (typeof document.body[fn] === 'function') {
+                matchesFn = fn;
+                return true;
+            }
+            return false;
+        });
+
+        while (element !== null) {
+            var parent = element.parentElement;
+            if (parent !== null && parent[matchesFn](selector)) {
+                return parent;
+            }
+            element = parent;
+        }
+
+        return null;
+    }
+
+    function getClosestWidth(element, selector) {
+
+        var parent = getClosest(element[0], selector);
+        var width = getCalculate(parent);
+
+        return width + 'px';
+
+    }
+
     function getParentWidth(element) {
 
         var parent = element[0], width;
 
         do {
             parent = parent.parentNode;
-            width = parseInt(getStyle(parent, 'width'), 10) - parseInt(getStyle(parent, 'padding-left'), 10) - parseInt(getStyle(parent, 'padding-right'), 10);
+            width = getCalculate(parent);
 
         } while( getStyle(parent, 'display') != 'block' && parent.nodeName.toLowerCase() != 'body' );
 
@@ -41,7 +77,15 @@ angular.module('puElasticInput', []).directive('puElasticInput', ['$document', '
 
     function setMirrorStyle(mirror, element, attrs) {
         var style = $window.getComputedStyle(element[0]);
-        var defaultMaxWidth = style.maxWidth === 'none' ? getParentWidth(element) : style.maxWidth;
+        var closestElement = attrs.puElasticInputClosest || null;
+        var defaultMaxWidth;
+
+        if (closestElement) {
+            defaultMaxWidth = getClosestWidth(element, closestElement);
+        } else {
+            defaultMaxWidth = style.maxWidth === 'none' ? getParentWidth(element) : style.maxWidth;
+        }
+
         element.css('minWidth', attrs.puElasticInputMinwidth || style.minWidth);
         element.css('maxWidth', attrs.puElasticInputMaxwidth || defaultMaxWidth);
 
